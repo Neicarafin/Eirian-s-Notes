@@ -1,0 +1,1 @@
+Less simple note taking
