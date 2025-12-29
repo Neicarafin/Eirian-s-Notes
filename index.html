@@ -2263,7 +2263,8 @@
           colorOption.className = 'color-option';
           colorOption.style.background = color;
           colorOption.title = color;
-          colorOption.addEventListener('click', () => {
+         colorOption.addEventListener('mousedown', (e) => {
+            e.preventDefault();
             editor.focus();
             document.execCommand('foreColor', false, color);
             textColorBtn.style.background = color;
@@ -2272,7 +2273,8 @@
           textColorPalette.appendChild(colorOption);
         });
 
-        textColorBtn.addEventListener('click', () => {
+        textColorBtn.addEventListener('mousedown', (e) => {
+          e.preventDefault();
           textColorPalette.classList.toggle('active');
           if (bgColorPalette) bgColorPalette.classList.remove('active');
         });
@@ -2285,7 +2287,8 @@
         transparentOption.style.borderStyle = 'dashed';
         transparentOption.style.borderColor = '#999';
         transparentOption.title = 'Transparent';
-        transparentOption.addEventListener('click', () => {
+        transparentOption.addEventListener('mousedown', (e) => {
+          e.preventDefault();
           editor.focus();
           document.execCommand('removeFormat', false, null);
           bgColorBtn.style.background = 'transparent';
@@ -2299,7 +2302,8 @@
           colorOption.className = 'color-option';
           colorOption.style.background = color;
           colorOption.title = color;
-          colorOption.addEventListener('click', () => {
+          colorOption.addEventListener('mousedown', (e) => {
+            e.preventDefault();
             editor.focus();
             document.execCommand('backColor', false, color);
             bgColorBtn.style.background = color;
@@ -2311,6 +2315,9 @@
 
         bgColorBtn.addEventListener('click', () => {
           bgColorPalette.classList.toggle('active');
+         bgColorBtn.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+           bgColorPalette.classList.toggle('active');
           if (textColorPalette) textColorPalette.classList.remove('active');
         });
       }
@@ -2392,3 +2399,4 @@
 </body>
 
 </html>
+
