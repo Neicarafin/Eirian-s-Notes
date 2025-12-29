@@ -1,0 +1,2393 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Notes</title>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+
+    #app {
+      height: 100%;
+      width: 100%;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .sidebar {
+      width: 280px;
+      background: #fbfbfb;
+      border-right: 1px solid #e8e8e8;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      transform: translateX(0);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    .workspace-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b6b6b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+
+    .new-note-button, .new-folder-button {
+      width: 100%;
+      padding: 10px 16px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .new-folder-button {
+      background: #fff;
+      color: #000;
+      border: 1px solid #e8e8e8;
+    }
+
+    .new-note-button:hover {
+      background: #333;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .new-folder-button:hover {
+      background: #f5f5f5;
+      border-color: #d0d0d0;
+    }
+
+    .new-note-button:active, .new-folder-button:active {
+      transform: translateY(0);
+    }
+
+    .theme-toggle {
+      width: 100%;
+      padding: 8px 12px;
+      background: transparent;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #6b6b6b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .theme-toggle:hover {
+      background: #f0f0f0;
+      border-color: #d0d0d0;
+    }
+
+    .notes-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .folder-item {
+      padding: 12px 16px;
+      margin-bottom: 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .folder-item:hover {
+      background: #f0f0f0;
+    }
+
+    .folder-item.active {
+      background: #fff;
+      border-color: #e8e8e8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .folder-icon {
+      font-size: 18px;
+    }
+
+    /* SVG icon sizing to match text/icon rhythm */
+    .folder-icon svg,
+    .folder-card-icon svg,
+    .note-action-button svg {
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .folder-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .folder-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #000;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .folder-count {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .note-list-item {
+      padding: 12px 16px 12px 36px;
+      margin-bottom: 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      position: relative;
+    }
+
+    .note-list-item .note-actions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 2;
+    }
+
+    .note-action-button {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: inherit;
+      transition: all 0.12s ease;
+    }
+
+    .note-action-button:hover {
+      background: rgba(0,0,0,0.05);
+      transform: translateY(-1px);
+    }
+
+    body.dark-mode .note-action-button:hover {
+      background: rgba(255,255,255,0.04);
+    }
+
+    .note-list-item::before {
+      content: '';
+      position: absolute;
+      left: 16px;
+      top: 20px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.5;
+    }
+
+    .note-list-item:hover {
+      background: #f0f0f0;
+    }
+
+    .note-list-item.active {
+      background: #fff;
+      border-color: #e8e8e8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .note-list-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #000;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .note-list-preview {
+      font-size: 13px;
+      color: #6b6b6b;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .note-list-date {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      overflow: hidden;
+      position: relative;
+      margin-left: 280px;
+      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .main-content.sidebar-hidden {
+      margin-left: 0;
+    }
+
+    .toggle-sidebar-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 300px;
+      width: 40px;
+      height: 40px;
+      background: rgba(0,0,0,0.05);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 150;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+    }
+
+    .toggle-sidebar-btn.sidebar-hidden {
+      left: 20px;
+    }
+
+    .toggle-sidebar-btn:hover {
+      background: rgba(0,0,0,0.1);
+      transform: scale(1.05);
+    }
+
+    /* Subtle homepage floating button for folder view */
+    .go-home-btn {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.06);
+      color: inherit;
+      border: 1px solid rgba(0,0,0,0.06);
+      cursor: pointer;
+      z-index: 160;
+      transition: transform 0.12s ease, background 0.12s ease;
+      backdrop-filter: blur(6px);
+    }
+
+    .go-home-btn:hover {
+      transform: translateY(-4px);
+      background: rgba(0,0,0,0.09);
+    }
+
+    body.dark-mode .go-home-btn {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.04);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 16px 80px 16px 20px;
+      border-bottom: 1px solid #e8e8e8;
+      background: #fafafa;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding-right: 12px;
+      border-right: 1px solid #e8e8e8;
+    }
+
+    .toolbar-group:last-child {
+      border-right: none;
+    }
+
+    .toolbar-button {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: #404040;
+    }
+
+    .toolbar-button:hover {
+      background: #e8e8e8;
+      color: #000;
+      transform: translateY(-1px);
+    }
+
+    .toolbar-button.active {
+      background: #000;
+      color: #fff;
+    }
+
+    .toolbar-select {
+      padding: 6px 10px;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 13px;
+      color: #404040;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .toolbar-select:hover {
+      border-color: #d0d0d0;
+    }
+
+    .toolbar-select:focus {
+      outline: none;
+      border-color: #000;
+    }
+
+    .color-picker-wrapper {
+      position: relative;
+    }
+
+    .color-button {
+      width: 32px;
+      height: 32px;
+      border: 2px solid #e8e8e8;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .color-button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .color-palette {
+      position: absolute;
+      top: 40px;
+      left: 0;
+      background: #fff;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 12px;
+      display: none;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .color-palette.active {
+      display: grid;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .color-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 2px solid transparent;
+    }
+
+    .color-option:hover {
+      transform: scale(1.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .editor-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .editor-area {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 60px 40px 120px;
+    }
+
+    .note-title {
+      width: 100%;
+      font-size: 42px;
+      font-weight: 700;
+      color: #000;
+      border: none;
+      outline: none;
+      background: transparent;
+      padding: 0;
+      margin: 0 0 24px 0;
+      line-height: 1.2;
+      resize: none;
+      overflow: hidden;
+      font-family: inherit;
+    }
+
+    .note-title::placeholder {
+      color: #d0d0d0;
+    }
+
+    .note-editor {
+      width: 100%;
+      min-height: 500px;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #404040;
+      border: none;
+      outline: none;
+      background: transparent;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .note-editor:empty:before {
+      content: "Start writing...";
+      color: #d0d0d0;
+    }
+
+    .note-editor p {
+      margin: 0 0 16px 0;
+    }
+
+    .note-editor h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #000;
+      margin: 32px 0 16px 0;
+      line-height: 1.3;
+    }
+
+    .note-editor h2 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #000;
+      margin: 24px 0 12px 0;
+      line-height: 1.4;
+    }
+
+    .note-editor h3 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #000;
+      margin: 20px 0 10px 0;
+      line-height: 1.4;
+    }
+
+    .note-editor strong {
+      font-weight: 600;
+      color: #000;
+    }
+
+    .note-editor em {
+      font-style: italic;
+    }
+
+    .note-editor code {
+      font-family: 'Courier New', monospace;
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #e91e63;
+    }
+
+    .note-editor blockquote {
+      border-left: 3px solid #e8e8e8;
+      padding-left: 20px;
+      margin: 16px 0;
+      color: #6b6b6b;
+      font-style: italic;
+    }
+
+    .note-editor ul {
+      padding-left: 28px;
+      margin: 16px 0;
+      list-style-type: disc;
+    }
+
+    .note-editor ol {
+      padding-left: 28px;
+      margin: 16px 0;
+      list-style-type: decimal;
+    }
+
+    .note-editor li {
+      margin: 8px 0;
+      display: list-item;
+    }
+
+    .note-editor a {
+      color: #0066cc;
+      text-decoration: underline;
+    }
+
+    .home-view {
+      flex: 1;
+      overflow-y: auto;
+      padding: 80px 40px 40px;
+      background: #F0EAD6; /* Eggshell white */
+      position: relative;
+    }
+
+    .home-view::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.15);
+      z-index: 1;
+    }
+
+    .home-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .home-header {
+      margin-bottom: 40px;
+      animation: slideDown 0.5s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .home-title {
+      font-size: 48px;
+      font-weight: 700;
+      color: #000;
+      margin: 0 0 12px 0;
+    }
+
+    .home-subtitle {
+      font-size: 18px;
+      color: #6b6b6b;
+      margin: 0 0 16px 0;
+    }
+
+    .customize-bg-btn {
+      padding: 10px 20px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .customize-bg-btn:hover {
+      background: #333;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .folders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+      animation: fadeInUp 0.5s ease 0.1s both;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .folder-card {
+      background: #fff;
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 24px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .folder-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: currentColor;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    .folder-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+
+    .folder-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .folder-card-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .folder-card-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: #000;
+      margin: 0 0 8px 0;
+    }
+
+    .folder-card-count {
+      font-size: 14px;
+      color: #999;
+      margin: 0;
+    }
+
+    .recent-notes {
+      animation: fadeInUp 0.5s ease 0.2s both;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #000;
+      margin: 0 0 20px 0;
+    }
+
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .note-card {
+      background: #fff;
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 24px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .note-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      border-color: #d0d0d0;
+    }
+
+    .note-card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #000;
+      margin: 0 0 12px 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .note-card-preview {
+      font-size: 14px;
+      color: #6b6b6b;
+      line-height: 1.6;
+      margin: 0 0 12px 0;
+      max-height: 60px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    .note-card-date {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #999;
+      padding: 40px 20px;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-text {
+      font-size: 15px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .delete-button {
+      margin-left: auto;
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #6b6b6b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .delete-button:hover {
+      background: #fff1f0;
+      border-color: #ffccc7;
+      color: #cf1322;
+      transform: translateY(-1px);
+    }
+
+    body.dark-mode {
+      background: #1a1a1a;
+    }
+
+    body.dark-mode .sidebar {
+      background: #2a2a2a;
+      border-right-color: #3a3a3a;
+    }
+
+    body.dark-mode .sidebar-header {
+      border-bottom-color: #3a3a3a;
+    }
+
+    body.dark-mode .workspace-name {
+      color: #999;
+    }
+
+    body.dark-mode .new-note-button {
+      background: #fff;
+      color: #000;
+    }
+
+    body.dark-mode .new-note-button:hover {
+      background: #e8e8e8;
+    }
+
+    body.dark-mode .new-folder-button {
+      background: #333;
+      color: #fff;
+      border-color: #404040;
+    }
+
+    body.dark-mode .new-folder-button:hover {
+      background: #3a3a3a;
+    }
+
+    body.dark-mode .folder-item:hover,
+    body.dark-mode .note-list-item:hover {
+      background: #3a3a3a;
+    }
+
+    body.dark-mode .folder-item.active,
+    body.dark-mode .note-list-item.active {
+      background: #333;
+      border-color: #404040;
+    }
+
+    body.dark-mode .folder-name,
+    body.dark-mode .note-list-title {
+      color: #fff;
+    }
+
+    body.dark-mode .folder-count,
+    body.dark-mode .note-list-preview {
+      color: #999;
+    }
+
+    body.dark-mode .note-list-date {
+      color: #666;
+    }
+
+    body.dark-mode .main-content {
+      background: #1a1a1a;
+    }
+
+    body.dark-mode .toolbar {
+      background: #2a2a2a;
+      border-bottom-color: #3a3a3a;
+    }
+
+    body.dark-mode .toolbar-group {
+      border-right-color: #3a3a3a;
+    }
+
+    body.dark-mode .toolbar-button {
+      color: #999;
+    }
+
+    body.dark-mode .toolbar-button:hover {
+      background: #3a3a3a;
+      color: #fff;
+    }
+
+    body.dark-mode .toolbar-button.active {
+      background: #fff;
+      color: #000;
+    }
+
+    body.dark-mode .toolbar-select {
+      background: #333;
+      border-color: #404040;
+      color: #fff;
+    }
+
+    body.dark-mode .color-palette {
+      background: #2a2a2a;
+      border-color: #3a3a3a;
+    }
+
+    body.dark-mode .note-title {
+      color: #fff;
+    }
+
+    body.dark-mode .note-title::placeholder {
+      color: #505050;
+    }
+
+    body.dark-mode .note-editor {
+      color: #fff;
+    }
+
+    body.dark-mode .note-editor:empty:before {
+      color: #505050;
+    }
+
+    body.dark-mode .note-editor h1,
+    body.dark-mode .note-editor h2,
+    body.dark-mode .note-editor h3 {
+      color: #fff;
+    }
+
+    body.dark-mode .note-editor strong {
+      color: #fff;
+    }
+
+    body.dark-mode .note-editor code {
+      background: #333;
+      color: #ff6b9d;
+    }
+
+    body.dark-mode .note-editor blockquote {
+      border-left-color: #404040;
+      color: #999;
+    }
+
+    body.dark-mode .note-editor a {
+      color: #5b9dff;
+    }
+
+    body.dark-mode .home-view {
+      background: #2a2a2a;
+    }
+
+    body.dark-mode .home-view::before {
+      background: rgba(42,42,42,0.15);
+    }
+
+    body.dark-mode .home-title {
+      color: #fff;
+    }
+
+    body.dark-mode .home-subtitle {
+      color: #fff;
+    }
+
+    body.dark-mode .folder-card,
+    body.dark-mode .note-card {
+      background: #2a2a2a;
+      border-color: #3a3a3a;
+    }
+
+    body.dark-mode .folder-card:hover,
+    body.dark-mode .note-card:hover {
+      border-color: #505050;
+    }
+
+    body.dark-mode .folder-card-name,
+    body.dark-mode .note-card-title,
+    body.dark-mode .section-title {
+      color: #fff;
+    }
+
+    body.dark-mode .folder-card-count,
+    body.dark-mode .note-card-preview {
+      color: #999;
+    }
+
+    body.dark-mode .note-card-date {
+      color: #666;
+    }
+
+    body.dark-mode .empty-state {
+      color: #666;
+    }
+
+    body.dark-mode .delete-button {
+      border-color: #3a3a3a;
+      color: #999;
+    }
+
+    body.dark-mode .delete-button:hover {
+      background: #3a1f1f;
+      border-color: #5a3030;
+      color: #ff6b6b;
+    }
+
+    body.dark-mode .theme-toggle {
+      border-color: #3a3a3a;
+      color: #999;
+    }
+
+    body.dark-mode .theme-toggle:hover {
+      background: #3a3a3a;
+      border-color: #404040;
+    }
+
+    body.dark-mode .toggle-sidebar-btn {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    body.dark-mode .toggle-sidebar-btn:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    body.dark-mode .customize-bg-btn {
+      background: #fff;
+      color: #000;
+    }
+
+    body.dark-mode .customize-bg-btn:hover {
+      background: #e8e8e8;
+    }
+
+    body.dark-mode .color-palette span,
+    body.dark-mode .color-palette label {
+      color: #fff !important;
+    }
+
+    body.dark-mode .palette-label {
+      color: #fff !important;
+    }
+
+    body.dark-mode .color-slider {
+      accent-color: #fff;
+    }
+
+    body.dark-mode .apply-color-btn {
+      background: #fff !important;
+      color: #000 !important;
+    }
+
+    .apply-color-btn {
+      width: 100%;
+      padding: 8px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .palette-label {
+      color: #404040;
+    }
+
+    .color-slider {
+      accent-color: #000;
+    }
+
+    .notes-container::-webkit-scrollbar,
+    .editor-wrapper::-webkit-scrollbar,
+    .home-view::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .notes-container::-webkit-scrollbar-track,
+    .editor-wrapper::-webkit-scrollbar-track,
+    .home-view::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .notes-container::-webkit-scrollbar-thumb,
+    .editor-wrapper::-webkit-scrollbar-thumb,
+    .home-view::-webkit-scrollbar-thumb {
+      background: #d0d0d0;
+      border-radius: 4px;
+    }
+
+    .notes-container::-webkit-scrollbar-thumb:hover,
+    .editor-wrapper::-webkit-scrollbar-thumb:hover,
+    .home-view::-webkit-scrollbar-thumb:hover {
+      background: #b0b0b0;
+    }
+
+    body.dark-mode .notes-container::-webkit-scrollbar-thumb,
+    body.dark-mode .editor-wrapper::-webkit-scrollbar-thumb,
+    body.dark-mode .home-view::-webkit-scrollbar-thumb {
+      background: #404040;
+    }
+
+    body.dark-mode .notes-container::-webkit-scrollbar-thumb:hover,
+    body.dark-mode .editor-wrapper::-webkit-scrollbar-thumb:hover,
+    body.dark-mode .home-view::-webkit-scrollbar-thumb:hover {
+      background: #505050;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 240px;
+      }
+
+      .main-content {
+        margin-left: 240px;
+      }
+
+      .toggle-sidebar-btn {
+        left: 260px;
+      }
+
+      .toggle-sidebar-btn.sidebar-hidden {
+        left: 20px;
+      }
+
+      .editor-area {
+        padding: 40px 20px 80px;
+      }
+
+      .note-title {
+        font-size: 32px;
+      }
+
+      .home-view {
+        padding: 60px 20px 40px;
+      }
+
+      .home-title {
+        font-size: 36px;
+      }
+
+      .folders-grid,
+      .notes-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #000;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .modal-input:focus {
+      border-color: #000;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .modal-button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid #e8e8e8;
+      background: #fff;
+      color: #000;
+    }
+
+    .modal-button.primary {
+      background: #000;
+      color: #fff;
+      border-color: #000;
+    }
+
+    .modal-button:hover {
+      transform: translateY(-1px);
+    }
+
+    .modal-button.primary:hover {
+      background: #333;
+    }
+
+    body.dark-mode .modal-content {
+      background: #2a2a2a;
+    }
+
+    body.dark-mode .modal-title {
+      color: #fff;
+    }
+
+    body.dark-mode .modal-input {
+      background: #333;
+      border-color: #404040;
+      color: #fff;
+    }
+
+    body.dark-mode .modal-button {
+      background: #333;
+      color: #fff;
+      border-color: #404040;
+    }
+
+    body.dark-mode .modal-button.primary {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app"></div>
+  <script>
+    let allItems = [];
+    let currentNote = null;
+    let currentFolder = null;
+    let sidebarVisible = true;
+    let currentView = 'home';
+    let homeBackground = '';
+
+    // Error overlay to surface runtime errors on the page for debugging
+    function showErrorOverlay(msg) {
+      try {
+        let overlay = document.getElementById('__error_overlay');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = '__error_overlay';
+          overlay.style.position = 'fixed';
+          overlay.style.left = '12px';
+          overlay.style.right = '12px';
+          overlay.style.top = '12px';
+          overlay.style.zIndex = 100000;
+          overlay.style.background = 'rgba(0,0,0,0.85)';
+          overlay.style.color = '#fff';
+          overlay.style.padding = '12px';
+          overlay.style.borderRadius = '8px';
+          overlay.style.maxHeight = '60vh';
+          overlay.style.overflow = 'auto';
+          overlay.style.fontFamily = 'monospace';
+          overlay.style.whiteSpace = 'pre-wrap';
+          const btn = document.createElement('button');
+          btn.textContent = 'Dismiss';
+          btn.style.float = 'right';
+          btn.style.marginLeft = '12px';
+          btn.addEventListener('click', () => overlay.remove());
+          overlay.appendChild(btn);
+          const content = document.createElement('div');
+          content.id = '__error_overlay_content';
+          overlay.appendChild(content);
+          document.body.appendChild(overlay);
+        }
+        const content = document.getElementById('__error_overlay_content');
+        if (content) content.textContent = msg;
+      } catch (e) {
+        console.error('Failed to show error overlay', e);
+      }
+    }
+
+    window.addEventListener('error', (ev) => {
+      const message = (ev && ev.error && ev.error.stack) ? ev.error.stack : (ev && ev.message) || String(ev);
+      showErrorOverlay(message);
+    });
+
+    window.addEventListener('unhandledrejection', (ev) => {
+      const reason = ev && ev.reason ? (ev.reason.stack || ev.reason) : 'Unhandled rejection';
+      showErrorOverlay(String(reason));
+    });
+
+    const FOLDER_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f39c12', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#e91e63', '#ff6b6b'];
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('notesData', JSON.stringify(allItems));
+        localStorage.setItem('homeBackground', homeBackground);
+      } catch (e) {
+        console.error('Failed to save to localStorage:', e);
+      }
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const savedData = localStorage.getItem('notesData');
+        const savedTheme = localStorage.getItem('theme');
+        const savedBackground = localStorage.getItem('homeBackground');
+        
+        if (savedData) {
+          allItems = JSON.parse(savedData);
+        }
+        
+        if (savedTheme === 'dark') {
+          document.body.classList.add('dark-mode');
+        }
+
+        if (savedBackground) {
+          homeBackground = savedBackground;
+        }
+      } catch (e) {
+        console.error('Failed to load from localStorage:', e);
+        allItems = [];
+      }
+    }
+
+    function renderApp() {
+      const app = document.getElementById('app');
+      if (!app) return;
+
+      app.innerHTML = `
+        <div class="sidebar ${sidebarVisible ? '' : 'hidden'}">
+          <div class="sidebar-header">
+            <div class="workspace-name">Eirian's Notes</div>
+            <button class="new-note-button" id="new-note-btn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 3V13M3 8H13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              New Note
+            </button>
+            <button class="new-folder-button" id="new-folder-btn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M1.75 3A1.75 1.75 0 0 0 0 4.75v7.5C0 13.216.784 14 1.75 14h12.5A1.75 1.75 0 0 0 16 12.25v-6.5A1.75 1.75 0 0 0 14.25 4H8.061l-.905-.905A1.75 1.75 0 0 0 5.92 2.5H1.75z"/>
+              </svg>
+              New Folder
+            </button>
+            <button class="theme-toggle" id="theme-toggle">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 13V2a6 6 0 0 1 0 12z"/>
+              </svg>
+              <span id="theme-label">${document.body.classList.contains('dark-mode') ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+          </div>
+          <div class="notes-container" id="items-list"></div>
+        </div>
+        <div class="main-content ${sidebarVisible ? '' : 'sidebar-hidden'}" id="main-area">
+          <button class="toggle-sidebar-btn ${sidebarVisible ? '' : 'sidebar-hidden'}" id="toggle-sidebar">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M3 10h14M3 5h14M3 15h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      `;
+
+      document.getElementById('new-note-btn').addEventListener('click', createNewNote);
+      document.getElementById('new-folder-btn').addEventListener('click', showFolderModal);
+      document.getElementById('toggle-sidebar').addEventListener('click', toggleSidebar);
+      
+      const themeToggle = document.getElementById('theme-toggle');
+      const themeLabel = document.getElementById('theme-label');
+      
+      themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        themeLabel.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+
+      if (currentView === 'home') {
+        renderHomeView();
+      } else if (currentView === 'editor') {
+        renderEditor();
+      }
+      
+      renderItemsList();
+
+      // Create subtle homepage floating button (if not already present)
+      let goHomeBtn = document.getElementById('go-home-btn');
+      if (!goHomeBtn) {
+        goHomeBtn = document.createElement('button');
+        goHomeBtn.id = 'go-home-btn';
+        goHomeBtn.className = 'go-home-btn';
+        goHomeBtn.title = 'Back to homepage';
+        goHomeBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 11.5L12 4l9 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 20.5V11h14v9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `;
+        goHomeBtn.addEventListener('click', () => {
+          currentFolder = null;
+          currentView = 'home';
+          renderHomeView();
+          renderItemsList();
+        });
+        document.body.appendChild(goHomeBtn);
+      }
+      // Toggle visibility based on view
+      goHomeBtn.style.display = currentView === 'folder' ? 'flex' : 'none';
+    }
+
+    function toggleSidebar() {
+      sidebarVisible = !sidebarVisible;
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
+      const toggleBtn = document.querySelector('.toggle-sidebar-btn');
+      
+      if (sidebarVisible) {
+        sidebar.classList.remove('hidden');
+        mainContent.classList.remove('sidebar-hidden');
+        toggleBtn.classList.remove('sidebar-hidden');
+      } else {
+        sidebar.classList.add('hidden');
+        mainContent.classList.add('sidebar-hidden');
+        toggleBtn.classList.add('sidebar-hidden');
+      }
+    }
+
+    function showBackgroundModal() {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h2 class="modal-title">Customize Background</h2>
+          <input type="file" class="modal-input" id="bg-file-input" accept="image/*" style="padding: 8px;">
+          <div class="modal-buttons">
+            <button class="modal-button" id="remove-bg-btn">Remove</button>
+            <button class="modal-button" id="cancel-btn">Cancel</button>
+            <button class="modal-button primary" id="apply-btn">Apply</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      const fileInput = document.getElementById('bg-file-input');
+      const removeBgBtn = document.getElementById('remove-bg-btn');
+      const cancelBtn = document.getElementById('cancel-btn');
+      const applyBtn = document.getElementById('apply-btn');
+
+      function closeModal() {
+        modal.remove();
+      }
+
+      function applyBackground() {
+        const file = fileInput.files[0];
+        if (!file) {
+          closeModal();
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          homeBackground = e.target.result;
+          saveToLocalStorage();
+          renderHomeView();
+          closeModal();
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function removeBackground() {
+        homeBackground = '';
+        saveToLocalStorage();
+        renderHomeView();
+        closeModal();
+      }
+
+      removeBgBtn.addEventListener('click', removeBackground);
+      cancelBtn.addEventListener('click', closeModal);
+      applyBtn.addEventListener('click', applyBackground);
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+    }
+
+    function renderHomeView() {
+      const mainArea = document.getElementById('main-area');
+      if (!mainArea) return;
+      
+      const toggleBtn = mainArea.querySelector('#toggle-sidebar');
+      
+      const folders = allItems.filter(item => item.type === 'folder');
+      const recentNotes = allItems.filter(item => item.type === 'note').slice(0, 6);
+
+      let homeHTML = `<div class="home-view"><div class="home-content">`;
+      
+      homeHTML += `
+        <div class="home-header">
+          <h1 class="home-title">Eirian's Notes</h1>
+          <p class="home-subtitle">Your personal workspace for organizing thoughts and ideas</p>
+          <button class="customize-bg-btn" id="customize-bg-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M2 2h12v12H2V2zm1 1v10h10V3H3zm2 2h6v6H5V5z"/>
+            </svg>
+            Customize Background
+          </button>
+        </div>
+      `;
+
+      if (folders.length > 0) {
+        homeHTML += '<div class="folders-section"><h2 class="section-title">Folders</h2><div class="folders-grid">';
+        folders.forEach(folder => {
+          const notesInFolder = allItems.filter(item => item.type === 'note' && item.folderId === folder.id).length;
+          homeHTML += `
+            <div class="folder-card" data-id="${folder.id}" style="color: ${folder.color};">
+              <div class="folder-card-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 7a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+              </div>
+              <h3 class="folder-card-name">${folder.title || 'Untitled Folder'}</h3>
+              <p class="folder-card-count">${notesInFolder} note${notesInFolder !== 1 ? 's' : ''}</p>
+            </div>
+          `;
+        });
+        homeHTML += '</div></div>';
+      }
+
+      if (folders.length === 0) {
+        homeHTML += `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 7a2 2 0 0 1 2-2h6l4 4v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+                <path d="M13 7v4h4" />
+              </svg>
+            </div>
+            <div class="empty-text">Create a note or folder to get started</div>
+          </div>
+        `;
+      }
+
+      homeHTML += '</div></div>';
+
+      mainArea.innerHTML = homeHTML;
+      // Apply background via DOM to avoid breaking the inline HTML when homeBackground contains quotes
+      const homeView = mainArea.querySelector('.home-view');
+      if (homeView) {
+        if (homeBackground) {
+          homeView.style.backgroundImage = 'url("' + homeBackground + '")';
+          homeView.style.backgroundSize = 'cover';
+          homeView.style.backgroundPosition = 'center';
+        } else {
+          homeView.style.backgroundImage = '';
+        }
+      }
+      if (toggleBtn) {
+        mainArea.insertBefore(toggleBtn, mainArea.firstChild);
+      }
+
+      const customizeBgBtn = document.getElementById('customize-bg-btn');
+      if (customizeBgBtn) {
+        customizeBgBtn.addEventListener('click', showBackgroundModal);
+      }
+
+      document.querySelectorAll('.folder-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const folderId = card.dataset.id;
+          openFolder(folderId);
+        });
+      });
+
+      document.querySelectorAll('.note-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const noteId = card.dataset.id;
+          openNote(noteId);
+        });
+      });
+    }
+
+    function renderItemsList() {
+      const container = document.getElementById('items-list');
+      if (!container) return;
+
+      const folders = allItems.filter(item => item.type === 'folder');
+      let notes;
+      if (currentView === 'trash') {
+        notes = allItems.filter(item => item.type === 'note' && item.trashed);
+      } else {
+        notes = currentFolder 
+          ? allItems.filter(item => item.type === 'note' && item.folderId === currentFolder.id && !item.trashed)
+          : allItems.filter(item => item.type === 'note' && !item.folderId && !item.trashed);
+      }
+
+      let html = '';
+
+      if (!currentFolder) {
+        html += `
+          <div class="folder-item ${currentView === 'home' ? 'active' : ''}" id="all-notes">
+            <div class="folder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 11.5L12 4l9 7.5" />
+                <path d="M5 20.5V11h14v9.5" />
+              </svg>
+            </div>
+            <div class="folder-details">
+              <div class="folder-name">All Notes</div>
+              <div class="folder-count">${allItems.filter(i => i.type === 'note').length} notes</div>
+            </div>
+          </div>
+        `;
+
+        folders.forEach(folder => {
+          const notesCount = allItems.filter(item => item.type === 'note' && item.folderId === folder.id).length;
+          html += `
+            <div class="folder-item" data-id="${folder.id}">
+              <div class="folder-icon" style="color: ${folder.color};">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 7a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+              </div>
+              <div class="folder-details">
+                <div class="folder-name">${folder.title || 'Untitled Folder'}</div>
+                <div class="folder-count">${notesCount} notes</div>
+              </div>
+            </div>
+          `;
+        });
+        // Trash folder
+        const trashCount = allItems.filter(i => i.type === 'note' && i.trashed).length;
+        html += `
+          <div class="folder-item" id="trash-bin">
+            <div class="folder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 6h18" />
+                <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+            </div>
+            <div class="folder-details">
+              <div class="folder-name">Trash</div>
+              <div class="folder-count">${trashCount} item${trashCount !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      notes.forEach(note => {
+        const title = note.title || 'Untitled';
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = note.content || '';
+        const preview = tempDiv.textContent.substring(0, 60) || 'No content';
+        const date = new Date(note.updatedAt).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        const isActive = currentNote && currentNote.id === note.id;
+
+        html += `
+          <div class="note-list-item ${isActive ? 'active' : ''}" data-id="${note.id}" style="color: ${note.color || '#999'};">
+            <div class="note-list-title">${title}</div>
+            <div class="note-list-preview">${preview}</div>
+            <div class="note-list-date">${date}</div>
+            <div class="note-actions">
+              ${currentView === 'trash' ? `
+                  <button class="note-action-button restore-btn" data-id="${note.id}" title="Restore">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M9 17L4 12l5-5" />
+                      <path d="M20 18v-2a6 6 0 0 0-6-6H9" />
+                    </svg>
+                  </button>
+                  <button class="note-action-button delete-perm-btn" data-id="${note.id}" title="Delete Permanently">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                ` : `
+                <button class="note-action-button trash-btn" data-id="${note.id}" title="Move to Trash">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 6h18" />
+                    <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                  </svg>
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      const allNotesBtn = document.getElementById('all-notes');
+      if (allNotesBtn) {
+        allNotesBtn.addEventListener('click', () => {
+          currentFolder = null;
+          currentView = 'home';
+          renderHomeView();
+          renderItemsList();
+        });
+      }
+
+      const trashBinBtn = document.getElementById('trash-bin');
+      if (trashBinBtn) {
+        trashBinBtn.addEventListener('click', () => {
+          currentFolder = null;
+          currentView = 'trash';
+          renderHomeView();
+          renderItemsList();
+        });
+      }
+
+      const homePageBtn = document.getElementById('home-page');
+      if (homePageBtn) {
+        homePageBtn.addEventListener('click', () => {
+          currentFolder = null;
+          currentView = 'home';
+          renderHomeView();
+          renderItemsList();
+        });
+      }
+
+      document.querySelectorAll('.folder-item[data-id]').forEach(item => {
+        item.addEventListener('click', () => {
+          const folderId = item.dataset.id;
+          openFolder(folderId);
+        });
+      });
+
+      document.querySelectorAll('.note-list-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const noteId = item.dataset.id;
+          openNote(noteId);
+        });
+      });
+
+      // Action buttons
+      document.querySelectorAll('.trash-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          trashNote(id);
+        });
+      });
+
+      document.querySelectorAll('.restore-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          restoreNote(id);
+        });
+      });
+
+      document.querySelectorAll('.delete-perm-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          if (confirm('Delete this note permanently? This cannot be undone.')) {
+            deleteNotePermanently(id);
+          }
+        });
+      });
+
+      // Ensure floating Homepage button visibility updates when list renders
+      const __goHomeBtn = document.getElementById('go-home-btn');
+      if (__goHomeBtn) {
+        __goHomeBtn.style.display = currentView === 'folder' ? 'flex' : 'none';
+      }
+    }
+
+    // Trash / restore / delete handlers
+    function trashNote(id) {
+      const idx = allItems.findIndex(i => i.id === id && i.type === 'note');
+      if (idx === -1) return;
+      allItems[idx].trashed = true;
+      if (currentNote && currentNote.id === id) currentNote = null;
+      saveToLocalStorage();
+      renderItemsList();
+      renderHomeView();
+    }
+
+    function restoreNote(id) {
+      const idx = allItems.findIndex(i => i.id === id && i.type === 'note');
+      if (idx === -1) return;
+      allItems[idx].trashed = false;
+      saveToLocalStorage();
+      renderItemsList();
+      renderHomeView();
+    }
+
+    function deleteNotePermanently(id) {
+      const idx = allItems.findIndex(i => i.id === id && i.type === 'note');
+      if (idx === -1) return;
+      allItems.splice(idx, 1);
+      if (currentNote && currentNote.id === id) currentNote = null;
+      saveToLocalStorage();
+      renderItemsList();
+      renderHomeView();
+    }
+
+    function createNewNote() {
+      if (allItems.length >= 999) {
+        showNotification("Maximum limit of 999 items reached. Please delete some items first.");
+        return;
+      }
+
+      const newNote = {
+        id: generateId(),
+        type: 'note',
+        title: '',
+        content: '',
+        folderId: currentFolder ? currentFolder.id : '',
+        color: FOLDER_COLORS[Math.floor(Math.random() * FOLDER_COLORS.length)],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      allItems.unshift(newNote);
+      saveToLocalStorage();
+      
+      currentNote = newNote;
+      currentView = 'editor';
+      
+      renderEditor();
+      renderItemsList();
+    }
+
+    function showFolderModal() {
+      if (allItems.length >= 999) {
+        showNotification("Maximum limit of 999 items reached. Please delete some items first.");
+        return;
+      }
+
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h2 class="modal-title">New Folder</h2>
+          <input type="text" class="modal-input" id="folder-name-input" placeholder="Folder name" autofocus>
+          <div class="modal-buttons">
+            <button class="modal-button" id="cancel-btn">Cancel</button>
+            <button class="modal-button primary" id="create-btn">Create</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      const input = document.getElementById('folder-name-input');
+      const cancelBtn = document.getElementById('cancel-btn');
+      const createBtn = document.getElementById('create-btn');
+
+      function closeModal() {
+        modal.remove();
+      }
+
+      function createFolder() {
+        const folderName = input.value.trim();
+        if (!folderName) {
+          input.focus();
+          return;
+        }
+
+        const newFolder = {
+          id: generateId(),
+          type: 'folder',
+          title: folderName,
+          content: '',
+          folderId: '',
+          color: FOLDER_COLORS[Math.floor(Math.random() * FOLDER_COLORS.length)],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        allItems.push(newFolder);
+        saveToLocalStorage();
+        
+        renderItemsList();
+        if (currentView === 'home') {
+          renderHomeView();
+        }
+        
+        closeModal();
+      }
+
+      cancelBtn.addEventListener('click', closeModal);
+      createBtn.addEventListener('click', createFolder);
+      
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          createFolder();
+        }
+      });
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+    }
+
+    function openFolder(folderId) {
+      const folder = allItems.find(f => f.id === folderId);
+      if (folder) {
+        currentFolder = folder;
+        currentNote = null;
+        currentView = 'folder';
+        renderItemsList();
+        
+        const mainArea = document.getElementById('main-area');
+        const toggleBtn = mainArea.querySelector('#toggle-sidebar');
+        mainArea.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 7a2 2 0 0 1 2-2h3l2 2h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              </svg>
+            </div>
+            <div class="empty-text">Select a note or create a new one in ${folder.title}</div>
+          </div>
+        `;
+        if (toggleBtn) {
+          mainArea.insertBefore(toggleBtn, mainArea.firstChild);
+        }
+      }
+    }
+
+    function openNote(noteId) {
+      const note = allItems.find(n => n.id === noteId);
+      if (note) {
+        currentNote = note;
+        currentView = 'editor';
+        renderEditor();
+        renderItemsList();
+      }
+    }
+
+    function renderEditor() {
+      if (!currentNote) return;
+
+      const mainArea = document.getElementById('main-area');
+      if (!mainArea) return;
+      
+      const toggleBtn = mainArea.querySelector('#toggle-sidebar');
+
+      const editorHTML = `
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <select class="toolbar-select" id="font-select">
+              <option value="Inter">Inter</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Arial">Arial</option>
+              <option value="Times New Roman">Times</option>
+              <option value="Courier New">Courier</option>
+            </select>
+          </div>
+          <div class="toolbar-group">
+            <select class="toolbar-select" id="format-select">
+              <option value="p">Normal</option>
+              <option value="h1">Heading 1</option>
+              <option value="h2">Heading 2</option>
+              <option value="h3">Heading 3</option>
+            </select>
+          </div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" data-cmd="bold" title="Bold">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M4 2h5a3 3 0 0 1 2.5 4.5A3.5 3.5 0 0 1 9.5 13H4V2zm1 5h4a2 2 0 1 0 0-4H5v4zm0 5h4.5a2.5 2.5 0 1 0 0-5H5v5z"/>
+              </svg>
+            </button>
+            <button class="toolbar-button" data-cmd="italic" title="Italic">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M7.5 2h5v1.5L10 3.75 8.25 12.25l2.5.25V14h-5v-1.5l2.5-.25L10 3.75 7.5 3.5V2z"/>
+              </svg>
+            </button>
+            <button class="toolbar-button" data-cmd="underline" title="Underline">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M4 2h1v6a3 3 0 0 0 6 0V2h1v6a4 4 0 1 1-8 0V2zM3 14h10v1H3v-1z"/>
+              </svg>
+            </button>
+            <button class="toolbar-button" data-cmd="strikeThrough" title="Strikethrough">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2 7.5h12v1H2v-1zm6.5-4a2.5 2.5 0 0 0-2.45 2h1.08a1.5 1.5 0 0 1 2.87.5c0 .35-.12.67-.32.92H11a2.5 2.5 0 0 0-2.5-3.42zm0 6a1.5 1.5 0 0 1-1.37.92 1.5 1.5 0 0 1-1.45-1.92h-1.1a2.5 2.5 0 0 0 4.42 1H8.5z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" data-cmd="insertUnorderedList" title="Bullet List">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3-1h9v1H5V3zm0 5h9v1H5V8zm0 5h9v1H5v-1zM2 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+              </svg>
+            </button>
+            <button class="toolbar-button" data-cmd="insertOrderedList" title="Numbered List">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2 2.5v2h1v-2H2zm0 3v1h2v-1H2zM2 9v1h2V9H2zm0 3v1h2v-1H2zM5 3h9v1H5V3zm0 5h9v1H5V8zm0 5h9v1H5v-1z"/>
+              </svg>
+            </button>
+            <button class="toolbar-button" data-cmd="formatBlock" data-value="blockquote" title="Quote">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2 4.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1a2 2 0 0 1-2 2 .5.5 0 0 1 0-1 1 1 0 0 0 1-1h-1.5a.5.5 0 0 1-.5-.5zm5 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1a2 2 0 0 1-2 2 .5.5 0 0 1 0-1 1 1 0 0 0 1-1H7.5a.5.5 0 0 1-.5-.5z"/>
+              </svg>
+            </button>
+            <button class="toolbar-button" data-cmd="formatBlock" data-value="pre" title="Code Block">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M5.5 5L3 8l2.5 3 .7-.7L3.9 8l2.3-2.3-.7-.7zm5 0l2.5 3-2.5 3 .7.7L13.1 8l-2.3-2.3-.7-.7z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="toolbar-group">
+            <button class="toolbar-button" data-cmd="createLink" title="Insert Link">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0z"/>
+              </svg>
+            </button>
+            <button class="toolbar-button" id="insert-bg-btn" title="Insert Background">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2 2h12v12H2V2zm1 1v10h10V3H3zm2 2h6v6H5V5z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="toolbar-group color-picker-wrapper">
+            <button class="color-button" id="text-color-btn" style="background: #000000;" title="Text Color"></button>
+            <div class="color-palette" id="text-color-palette" style="grid-template-columns: repeat(10, 1fr); padding: 12px; width: 280px; gap: 6px; max-height: 320px; overflow-y: auto;">
+            </div>
+          </div>
+          <div class="toolbar-group color-picker-wrapper">
+            <button class="color-button" id="bg-color-btn" style="background: transparent; border-style: dashed;" title="Highlight"></button>
+            <div class="color-palette" id="bg-color-palette" style="grid-template-columns: repeat(10, 1fr); padding: 12px; width: 280px; gap: 6px; max-height: 320px; overflow-y: auto;">
+            </div>
+          </div>
+          <button class="delete-button" id="delete-btn">Delete</button>
+          <button class="delete-button" id="exit-btn" style="margin-left: 8px;">Exit</button>
+        </div>
+        <div class="editor-wrapper">
+          <div class="editor-area">
+            <textarea 
+              class="note-title" 
+              id="note-title-input" 
+              placeholder="Untitled"
+              rows="1"
+            >${currentNote.title || ''}</textarea>
+            <div 
+              class="note-editor" 
+              id="note-editor" 
+              contenteditable="true"
+            >${currentNote.content || ''}</div>
+          </div>
+        </div>
+      `;
+
+      mainArea.innerHTML = editorHTML;
+      if (toggleBtn) {
+        mainArea.insertBefore(toggleBtn, mainArea.firstChild);
+      }
+
+      setupEditor();
+    }
+
+    function setupEditor() {
+      const titleInput = document.getElementById('note-title-input');
+      const editor = document.getElementById('note-editor');
+      const formatSelect = document.getElementById('format-select');
+      const fontSelect = document.getElementById('font-select');
+      const deleteBtn = document.getElementById('delete-btn');
+      const exitBtn = document.getElementById('exit-btn');
+
+      if (!titleInput || !editor) return;
+
+      exitBtn.addEventListener('click', () => {
+        currentNote = null;
+        currentFolder = null;
+        currentView = 'home';
+        renderHomeView();
+        renderItemsList();
+      });
+
+      function autoResize() {
+        titleInput.style.height = 'auto';
+        titleInput.style.height = titleInput.scrollHeight + 'px';
+      }
+      
+      titleInput.addEventListener('input', autoResize);
+      autoResize();
+
+      let saveTimeout;
+      function debounceSave() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          if (currentNote) {
+            const noteIndex = allItems.findIndex(n => n.id === currentNote.id);
+            if (noteIndex !== -1) {
+              allItems[noteIndex].title = titleInput.value;
+              allItems[noteIndex].content = editor.innerHTML;
+              allItems[noteIndex].updatedAt = new Date().toISOString();
+              saveToLocalStorage();
+              renderItemsList();
+            }
+          }
+        }, 600);
+      }
+
+      titleInput.addEventListener('input', debounceSave);
+      editor.addEventListener('input', debounceSave);
+
+      if (fontSelect) {
+        fontSelect.addEventListener('change', (e) => {
+          editor.style.fontFamily = `'${e.target.value}', sans-serif`;
+          titleInput.style.fontFamily = `'${e.target.value}', sans-serif`;
+          editor.focus();
+        });
+      }
+
+      document.querySelectorAll('.toolbar-button[data-cmd]').forEach(btn => {
+        btn.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+        });
+        
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const cmd = btn.dataset.cmd;
+          const value = btn.dataset.value;
+
+          if (cmd === 'createLink') {
+            const url = window.prompt('Enter URL:', 'https://');
+            if (url && url.trim() !== '' && url !== 'https://') {
+              document.execCommand(cmd, false, url);
+            }
+          } else if (value) {
+            document.execCommand(cmd, false, value);
+          } else {
+            document.execCommand(cmd, false, null);
+          }
+
+          setTimeout(() => {
+            editor.focus();
+            updateToolbarState();
+          }, 10);
+        });
+      });
+
+      if (formatSelect) {
+        formatSelect.addEventListener('change', (e) => {
+          const value = e.target.value;
+          document.execCommand('formatBlock', false, value);
+          editor.focus();
+        });
+      }
+
+      const textColorBtn = document.getElementById('text-color-btn');
+      const textColorPalette = document.getElementById('text-color-palette');
+      const bgColorBtn = document.getElementById('bg-color-btn');
+      const bgColorPalette = document.getElementById('bg-color-palette');
+      const insertBgBtn = document.getElementById('insert-bg-btn');
+
+      if (insertBgBtn) {
+        insertBgBtn.addEventListener('click', () => {
+          const fileInput = document.createElement('input');
+          fileInput.type = 'file';
+          fileInput.accept = 'image/*';
+          fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                const editorWrapper = document.querySelector('.editor-wrapper');
+                if (editorWrapper) {
+                  editorWrapper.style.backgroundImage = `url('${event.target.result}')`;
+                  editorWrapper.style.backgroundSize = 'cover';
+                  editorWrapper.style.backgroundPosition = 'center';
+                  editorWrapper.style.backgroundRepeat = 'no-repeat';
+                  editorWrapper.style.opacity = '0.5';
+                  editor.style.background = 'transparent';
+                }
+                editor.focus();
+                debounceSave();
+              };
+              reader.readAsDataURL(file);
+            }
+          };
+          fileInput.click();
+        });
+      }
+
+      const colorPalette = [
+        '#000000', '#1a1a1a', '#333333', '#4d4d4d', '#666666', '#808080', '#999999', '#b3b3b3', '#cccccc', '#e6e6e6',
+        '#ffffff', '#fff5f5', '#ffe5e5', '#ffd6d6', '#ffc6c6', '#ffb3b3', '#ff9999', '#ff8080', '#ff6666', '#ff4d4d',
+        '#ff3333', '#ff1a1a', '#ff0000', '#e60000', '#cc0000', '#b30000', '#990000', '#800000', '#660000', '#4d0000',
+        '#fff9f0', '#fff3e0', '#ffedd1', '#ffe7c2', '#ffe1b3', '#ffdba3', '#ffd694', '#ffd085', '#ffca75', '#ffc466',
+        '#ffbe57', '#ffb847', '#ffb238', '#ffac29', '#ffa61a', '#ffa00a', '#ff9a00', '#e68a00', '#cc7a00', '#b36b00',
+        '#fffef0', '#fffde0', '#fffcd1', '#fffbc2', '#fffab3', '#fff9a3', '#fff894', '#fff785', '#fff675', '#fff566',
+        '#fff457', '#fff347', '#fff238', '#fff129', '#fff01a', '#ffef0a', '#ffee00', '#e6d600', '#ccbe00', '#b3a600',
+        '#f0fff0', '#e0ffe0', '#d1ffd1', '#c2ffc2', '#b3ffb3', '#a3ffa3', '#94ff94', '#85ff85', '#75ff75', '#66ff66',
+        '#57ff57', '#47ff47', '#38ff38', '#29ff29', '#1aff1a', '#0aff0a', '#00ff00', '#00e600', '#00cc00', '#00b300',
+        '#f0ffff', '#e0ffff', '#d1ffff', '#c2ffff', '#b3ffff', '#a3ffff', '#94ffff', '#85ffff', '#75ffff', '#66ffff',
+        '#57ffff', '#47ffff', '#38ffff', '#29ffff', '#1affff', '#0affff', '#00ffff', '#00e6e6', '#00cccc', '#00b3b3',
+        '#f0f0ff', '#e0e0ff', '#d1d1ff', '#c2c2ff', '#b3b3ff', '#a3a3ff', '#9494ff', '#8585ff', '#7575ff', '#6666ff',
+        '#5757ff', '#4747ff', '#3838ff', '#2929ff', '#1a1aff', '#0a0aff', '#0000ff', '#0000e6', '#0000cc', '#0000b3',
+        '#fff0ff', '#ffe0ff', '#ffd1ff', '#ffc2ff', '#ffb3ff', '#ffa3ff', '#ff94ff', '#ff85ff', '#ff75ff', '#ff66ff',
+        '#ff57ff', '#ff47ff', '#ff38ff', '#ff29ff', '#ff1aff', '#ff0aff', '#ff00ff', '#e600e6', '#cc00cc', '#b300b3',
+        '#fff0f9', '#ffe0f5', '#ffd1f0', '#ffc2ec', '#ffb3e8', '#ffa3e3', '#ff94df', '#ff85da', '#ff75d6', '#ff66d1',
+        '#ff57cd', '#ff47c8', '#ff38c4', '#ff29bf', '#ff1abb', '#ff0ab6', '#ff00b2', '#e600a0', '#cc008e', '#b3007c'
+      ];
+
+      if (textColorBtn && textColorPalette) {
+        colorPalette.forEach(color => {
+          const colorOption = document.createElement('div');
+          colorOption.className = 'color-option';
+          colorOption.style.background = color;
+          colorOption.title = color;
+          colorOption.addEventListener('click', () => {
+            editor.focus();
+            document.execCommand('foreColor', false, color);
+            textColorBtn.style.background = color;
+            textColorPalette.classList.remove('active');
+          });
+          textColorPalette.appendChild(colorOption);
+        });
+
+        textColorBtn.addEventListener('click', () => {
+          textColorPalette.classList.toggle('active');
+          if (bgColorPalette) bgColorPalette.classList.remove('active');
+        });
+      }
+
+      if (bgColorBtn && bgColorPalette) {
+        const transparentOption = document.createElement('div');
+        transparentOption.className = 'color-option';
+        transparentOption.style.background = 'transparent';
+        transparentOption.style.borderStyle = 'dashed';
+        transparentOption.style.borderColor = '#999';
+        transparentOption.title = 'Transparent';
+        transparentOption.addEventListener('click', () => {
+          editor.focus();
+          document.execCommand('removeFormat', false, null);
+          bgColorBtn.style.background = 'transparent';
+          bgColorBtn.style.borderStyle = 'dashed';
+          bgColorPalette.classList.remove('active');
+        });
+        bgColorPalette.appendChild(transparentOption);
+
+        colorPalette.forEach(color => {
+          const colorOption = document.createElement('div');
+          colorOption.className = 'color-option';
+          colorOption.style.background = color;
+          colorOption.title = color;
+          colorOption.addEventListener('click', () => {
+            editor.focus();
+            document.execCommand('backColor', false, color);
+            bgColorBtn.style.background = color;
+            bgColorBtn.style.borderStyle = 'solid';
+            bgColorPalette.classList.remove('active');
+          });
+          bgColorPalette.appendChild(colorOption);
+        });
+
+        bgColorBtn.addEventListener('click', () => {
+          bgColorPalette.classList.toggle('active');
+          if (textColorPalette) textColorPalette.classList.remove('active');
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.color-picker-wrapper')) {
+          if (textColorPalette) textColorPalette.classList.remove('active');
+          if (bgColorPalette) bgColorPalette.classList.remove('active');
+        }
+      });
+
+      function updateToolbarState() {
+        document.querySelectorAll('.toolbar-button[data-cmd]').forEach(btn => {
+          const cmd = btn.dataset.cmd;
+          if (document.queryCommandState(cmd)) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      editor.addEventListener('mouseup', updateToolbarState);
+      editor.addEventListener('keyup', updateToolbarState);
+
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+          if (currentNote) {
+            const noteIndex = allItems.findIndex(n => n.id === currentNote.id);
+            if (noteIndex !== -1) {
+              allItems.splice(noteIndex, 1);
+              saveToLocalStorage();
+              currentNote = null;
+              currentView = 'home';
+              renderHomeView();
+              renderItemsList();
+            }
+          }
+        });
+      }
+
+      editor.focus();
+    }
+
+    function showNotification(message) {
+      const notification = document.createElement('div');
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #000;
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    function init() {
+      loadFromLocalStorage();
+      renderApp();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
